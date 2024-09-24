@@ -44,18 +44,20 @@ public class GameField {
         //Keep prompting the user until coordinates are provided in the valid format
         while (!validatedCoordinates) {
             Scanner scanner = new Scanner(System.in);
-            System.out.printf("Enter the coordinates for your %s \n", ship);
-            System.out.print("> ");
             String input = scanner.nextLine();
             inputCoordinates = input.toUpperCase().split(" ");
             //If the user enters more than 2 coordinates per ship return an error
             if (inputCoordinates.length > 2) {
                 System.err.println("Error! Enter exactly 2 coordinates");
                 continue;
-            } else if (Character.isAlphabetic(inputCoordinates[0].charAt(1)) ||
+            } else if ((inputCoordinates[0].length() < 2 ||
                     Character.isDigit(inputCoordinates[0].charAt(0)) ||
-                    Character.isAlphabetic(inputCoordinates[1].charAt(1)) ||
-                    Character.isDigit(inputCoordinates[1].charAt(0))) {
+                    Character.isAlphabetic(inputCoordinates[0].charAt(1)))
+                    ||
+                    (inputCoordinates[1].length() < 2) ||
+                    Character.isDigit(inputCoordinates[1].charAt(0)) ||
+                    Character.isAlphabetic(inputCoordinates[1].charAt(1))
+            ) {
                 System.err.println("Error! Enter the coordinates in the correct format. Example: 'A1' ");
                 continue;
             }
@@ -65,36 +67,104 @@ public class GameField {
     }
 
     //Parse the user provided coordinates to user for ship placements
-    private int[] parseCoordinates(String[] coordinates, Ship ship) {
+    private int[] parseCoordinates(Ship ship) {
+
+        String[] coordinates = getCoordinateInputFromUser(ship);
 
         //Split the input into 2 pieces to extract the coordinates
         String startPosition = coordinates[0];
-        System.out.println(startPosition.charAt(0));
         String endPosition = coordinates[1];
-        System.out.println(endPosition.charAt(0));
+
         //Extract column indices from the numerical coordinates and deduct "1" from them
         int startingColumnIndex = Integer.parseInt(startPosition.substring(1)) - 1;
         int endingColumnIndex = Integer.parseInt(endPosition.substring(1)) - 1;
 
         //Convert alphabetical coordinates into row indices and store them for later use
-        int startRowIndex = startPosition.charAt(0) - 'A';
+        int startingRowIndex = startPosition.charAt(0) - 'A';
         int endingRowIndex = endPosition.charAt(0) - 'A';
 
         //If first entered alphabetical coordinate greater than the latter, reverse them for ship placement use
-        if (startRowIndex > endingRowIndex && startingColumnIndex == endingColumnIndex) {
+        if (startingRowIndex > endingRowIndex && startingColumnIndex == endingColumnIndex) {
             int tempRowIndex = endingRowIndex;
-            endingRowIndex = startRowIndex;
-            startRowIndex = tempRowIndex;
+            endingRowIndex = startingRowIndex;
+            startingRowIndex = tempRowIndex;
         }
 
         //If first entered numerical coordinate greater than the latter, reverse them for ship placement use
-        if (startRowIndex == endingRowIndex && startingColumnIndex > endingColumnIndex) {
+        if (startingRowIndex == endingRowIndex && startingColumnIndex > endingColumnIndex) {
             int tempPositionIndex = endingColumnIndex;
             endingColumnIndex = startingColumnIndex;
             startingColumnIndex = tempPositionIndex;
         }
 
-        return new int[]{startRowIndex, startingColumnIndex, endingRowIndex, endingColumnIndex};
+        return new int[]{startingRowIndex, startingColumnIndex, endingRowIndex, endingColumnIndex};
+    }
+
+    private boolean canPlaceShip(int fixedIndex, int start, int end, boolean isHorizontal) {
+
+            /*
+            -- If the placement is horizontal, variable 'fixed' becomes the row index and,
+             variable 'iterator' becomes the column index and increments
+            -- If the placement is vertical, variable 'fixed' becomes the column index and,
+             variable 'iterator becomes the row index and increments
+             */
+        for (int i = start; i <= end; i++) {
+            int fixed = isHorizontal ? fixedIndex : i;
+            int iterator = isHorizontal ? i : fixedIndex;
+            
+            /*
+            System.out.printf("Checking %c%d", Math.min(field.length - 1, fixed + 1) + 'A', iterator + 1);
+            System.out.printf("Checking %c%d", Math.max(0, fixed - 1) + 'A', iterator + 1);
+            System.out.printf("Checking %c%d", fixed + 'A', Math.min(field.length - 1, iterator + 1) + 1);
+            System.out.printf("Checking %c%d", fixed + 'A', Math.max(0, iterator - 1) + 1);
+            */
+
+
+            // Check if any of the entered coordinates are occupied by another ship if yes,
+            // return and error and prompt the user for new coordinates
+            if (field[fixed][iterator] == OCCUPIED_BY_SHIP) {
+                System.err.printf("Error! Coordinate %c%d is already occupied!%n", fixed + 'A', iterator + 1);
+                return false;
+            // Check if the adjacent fields are occupied by another ship if yes,
+            // return an error and prompt the user for new coordinates
+            } else if (field[Math.min( field.length - 1, fixed + 1)][iterator] == OCCUPIED_BY_SHIP ||
+                    field[Math.max(0, fixed - 1)][iterator] == OCCUPIED_BY_SHIP ||
+                    field[fixed][Math.min(field.length - 1, iterator + 1)] == OCCUPIED_BY_SHIP ||
+                    field[fixed][Math.max(0, iterator - 1)] == OCCUPIED_BY_SHIP
+                    ) {
+                System.err.println("Error! You placed it too close to another one. Try again:");
+                return false;
+            }
+        }
+
+        //Place the ship
+        for (int i = start; i <= end; i++) {
+            int fixed = isHorizontal ? fixedIndex : i;
+            int iterator = isHorizontal ? i : fixedIndex;
+            field[fixed][iterator] = OCCUPIED_BY_SHIP;
+        }
+        return true;
+    }
+
+    private boolean placedShip(int startingRowIndex, int startingColumnIndex, int endingRowIndex, int endingColumnIndex) {
+
+        //Horizontal placement
+        if (startingRowIndex == endingRowIndex &&
+                startingColumnIndex >= 0 &&
+                endingColumnIndex < field.length) {
+            return canPlaceShip(startingRowIndex, startingColumnIndex, endingColumnIndex, true);
+        }
+
+        //Vertical placement
+        else if (startingColumnIndex == endingColumnIndex &&
+                startingRowIndex >= 0 &&
+                endingRowIndex < field.length
+        ) {
+            return canPlaceShip(startingColumnIndex, startingRowIndex, endingRowIndex, false);
+        } else {
+            System.err.println("Error! Wrong ship location! Try again:");
+            return false;
+        }
     }
 
     void placeShips() {
@@ -111,67 +181,34 @@ public class GameField {
         for (Ship ship : shipsToPlace) {
             boolean shipPlaced = false;
 
+            System.out.printf("Enter the coordinates for your %s (%d cells): %n", ship, ship.length);
+            System.out.print("> ");
+
             //Keep prompting the user until all ships are placed on the field
             while (!shipPlaced) {
-                String[] coordinates = getCoordinateInputFromUser(ship);
-                int[] parsedCoordinates = parseCoordinates(coordinates, ship);
-                int startRowIndex = parsedCoordinates[0];
+
+                int[] parsedCoordinates = parseCoordinates(ship);
+                int startingRowIndex = parsedCoordinates[0];
                 int startingColumnIndex = parsedCoordinates[1];
                 int endingRowIndex = parsedCoordinates[2];
                 int endingColumnIndex = parsedCoordinates[3];
 
                 try {
-                    StringBuilder parts = new StringBuilder();
-
                     //Check if the length of the coordinates matches the ship length
                     //If not, prompt the user again
-                    if (endingColumnIndex - startingColumnIndex + 1 == ship.length
-                            || endingRowIndex - startRowIndex + 1 == ship.length) {
-
-                        //Horizontal placement
-                        if (startRowIndex == endingRowIndex &&
-                                startingColumnIndex >= 0 &&
-                                endingColumnIndex < field.length) {
-                            for (int i = startingColumnIndex; i <= endingColumnIndex; i++) {
-                                if (field[startRowIndex][i] == FOG_OF_WAR) {
-                                    field[startRowIndex][i] = OCCUPIED_BY_SHIP;
-                                    parts.append((char) (startRowIndex + 'A')).append(startingColumnIndex + 1).append(" ");
-                                } else if (field[startRowIndex][i] == OCCUPIED_BY_SHIP) {
-                                    System.err.println("Coordinate " + (char) (startRowIndex + 'A') + (startingColumnIndex + 1) + " is already occupied.");
-                                }
-                            }
+                    if ((endingColumnIndex - startingColumnIndex + 1 == ship.length) ||
+                            endingRowIndex - startingRowIndex + 1 == ship.length) {
+                        if (placedShip(startingRowIndex, startingColumnIndex, endingRowIndex, endingColumnIndex)) {
+                            shipPlaced = true;
+                            System.out.printf("> %c%d %c%d %n", startingRowIndex + 'A', startingColumnIndex + 1, endingRowIndex + 'A', endingColumnIndex + 1);
+                            System.out.println(this);
                         }
-
-                        //Vertical placement
-                        else if (startingColumnIndex == endingColumnIndex &&
-                                startRowIndex >= 0 &&
-                                endingRowIndex < field.length
-                        ) {
-                            for (int i = startRowIndex; i <= endingRowIndex; i++) {
-                                if (field[i][startingColumnIndex] == FOG_OF_WAR) {
-                                    field[i][startingColumnIndex] = OCCUPIED_BY_SHIP;
-                                    parts.append((char) ('A' + i)).append(startingColumnIndex + 1).append(" ");
-                                } else if (field[i][startingColumnIndex] == OCCUPIED_BY_SHIP) {
-                                    System.err.println("Coordinate " + (char) ('A' + i) + (startingColumnIndex + 1) + " is already occupied.");
-                                }
-                            }
-                        } else {
-                            System.err.println("Error!");
-                            return;
-                        }
-                        shipPlaced = true;
-                        //System.out.println("Length: " + coordinateLength);
-                        System.out.println("> " + coordinates[0] + " " + coordinates[1] + "\n");
-                        //System.out.println("Parts: " + parts);
-                        System.out.println(this);
                     } else {
-                        System.err.printf("\n Error! Wrong length of the %s! Try again: \n", ship);
-                        System.out.println("> " + coordinates[0] + " " + coordinates[1] + "\n");
-                        System.out.println(this);
+                        System.err.printf("Error! Wrong length of the %s! Try again: %n", ship);
                     }
                 } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
                     System.err.println(e.getMessage());
-                    System.err.println("Error!");
+                    System.err.println("Error! ");
                 }
             }
         }
