@@ -3,8 +3,9 @@ package Battleship;
 public class Main {
 
     public static void main(String[] args) {
-        GameField gameField = new GameField();
-        System.out.println(gameField);
-        gameField.placeShips();
+        Game game = new Game();
+        System.out.println(game.gameField);
+        game.gameField.placeShips();
+        game.takeAShot();
     }
 }

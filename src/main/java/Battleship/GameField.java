@@ -2,21 +2,37 @@ package Battleship;
 
 import java.util.Arrays;
 import java.util.Scanner;
+import static Battleship.FieldSymbols.*;
+
+enum FieldSymbols {
+    FOG_OF_WAR('~'),
+    OCCUPIED_BY_SHIP('O'),
+    HIT('X'),
+    MISS('M');
+
+    private final char symbol;
+
+    FieldSymbols(char symbol) {
+       this.symbol = symbol;
+    }
+
+    public char getSymbol() {
+        return symbol;
+    }
+}
+
 
 public class GameField {
-    public static final char FOG_OF_WAR = '~';
-    public static final char OCCUPIED_BY_SHIP = 'O';
-    public static final char HIT = 'X';
-    public static final char MISS = 'M';
-    public final char[][] field = new char[10][10];
 
+    public final char[][] field = new char[10][10];
 
     //Fill up the game field with "FOG OF WAR"
     public GameField() {
         for (char[] chars : field) {
-            Arrays.fill(chars, FOG_OF_WAR);
+            Arrays.fill(chars, FOG_OF_WAR.getSymbol());
         }
     }
+
 
     //Draw coordinates around the game field
     @Override
@@ -37,7 +53,7 @@ public class GameField {
     }
 
     //Get coordinates from the user and validate its format
-    private String[] getCoordinateInputFromUser(Ship ship) {
+    private String[] getCoordinateInputFromUser() {
         boolean validatedCoordinates = false;
         String[] inputCoordinates = null;
 
@@ -48,7 +64,7 @@ public class GameField {
             inputCoordinates = input.toUpperCase().split(" ");
             //If the user enters more than 2 coordinates per ship return an error
             if (inputCoordinates.length > 2) {
-                System.err.println("Error! Enter exactly 2 coordinates");
+                System.out.println("Error! Enter exactly 2 coordinates");
                 continue;
             } else if ((inputCoordinates[0].length() < 2 ||
                     Character.isDigit(inputCoordinates[0].charAt(0)) ||
@@ -58,7 +74,7 @@ public class GameField {
                     Character.isDigit(inputCoordinates[1].charAt(0)) ||
                     Character.isAlphabetic(inputCoordinates[1].charAt(1))
             ) {
-                System.err.println("Error! Enter the coordinates in the correct format. Example: 'A1' ");
+                System.out.println("Error! Enter the coordinates in the correct format. Example: 'A1' ");
                 continue;
             }
             validatedCoordinates = true;
@@ -67,9 +83,9 @@ public class GameField {
     }
 
     //Parse the user provided coordinates to user for ship placements
-    private int[] parseCoordinates(Ship ship) {
+    private int[] parseCoordinates() {
 
-        String[] coordinates = getCoordinateInputFromUser(ship);
+        String[] coordinates = getCoordinateInputFromUser();
 
         //Split the input into 2 pieces to extract the coordinates
         String startPosition = coordinates[0];
@@ -122,17 +138,17 @@ public class GameField {
 
             // Check if any of the entered coordinates are occupied by another ship if yes,
             // return and error and prompt the user for new coordinates
-            if (field[fixed][iterator] == OCCUPIED_BY_SHIP) {
-                System.err.printf("Error! Coordinate %c%d is already occupied!%n", fixed + 'A', iterator + 1);
+            if (field[fixed][iterator] == FieldSymbols.OCCUPIED_BY_SHIP.getSymbol()) {
+                System.out.printf("Error! Coordinate %c%d is already occupied!%n", fixed + 'A', iterator + 1);
                 return false;
             // Check if the adjacent fields are occupied by another ship if yes,
             // return an error and prompt the user for new coordinates
-            } else if (field[Math.min( field.length - 1, fixed + 1)][iterator] == OCCUPIED_BY_SHIP ||
-                    field[Math.max(0, fixed - 1)][iterator] == OCCUPIED_BY_SHIP ||
-                    field[fixed][Math.min(field.length - 1, iterator + 1)] == OCCUPIED_BY_SHIP ||
-                    field[fixed][Math.max(0, iterator - 1)] == OCCUPIED_BY_SHIP
+            } else if (field[Math.min( field.length - 1, fixed + 1)][iterator] == OCCUPIED_BY_SHIP.getSymbol() ||
+                    field[Math.max(0, fixed - 1)][iterator] == OCCUPIED_BY_SHIP.getSymbol() ||
+                    field[fixed][Math.min(field.length - 1, iterator + 1)] == OCCUPIED_BY_SHIP.getSymbol() ||
+                    field[fixed][Math.max(0, iterator - 1)] == OCCUPIED_BY_SHIP.getSymbol()
                     ) {
-                System.err.println("Error! You placed it too close to another one. Try again:");
+                System.out.println("Error! You placed it too close to another one. Try again:");
                 return false;
             }
         }
@@ -141,7 +157,7 @@ public class GameField {
         for (int i = start; i <= end; i++) {
             int fixed = isHorizontal ? fixedIndex : i;
             int iterator = isHorizontal ? i : fixedIndex;
-            field[fixed][iterator] = OCCUPIED_BY_SHIP;
+            field[fixed][iterator] = OCCUPIED_BY_SHIP.getSymbol();
         }
         return true;
     }
@@ -162,7 +178,7 @@ public class GameField {
         ) {
             return canPlaceShip(startingColumnIndex, startingRowIndex, endingRowIndex, false);
         } else {
-            System.err.println("Error! Wrong ship location! Try again:");
+            System.out.println("Error! Wrong ship location! Try again:");
             return false;
         }
     }
@@ -187,7 +203,7 @@ public class GameField {
             //Keep prompting the user until all ships are placed on the field
             while (!shipPlaced) {
 
-                int[] parsedCoordinates = parseCoordinates(ship);
+                int[] parsedCoordinates = parseCoordinates();
                 int startingRowIndex = parsedCoordinates[0];
                 int startingColumnIndex = parsedCoordinates[1];
                 int endingRowIndex = parsedCoordinates[2];
@@ -204,13 +220,14 @@ public class GameField {
                             System.out.println(this);
                         }
                     } else {
-                        System.err.printf("Error! Wrong length of the %s! Try again: %n", ship);
+                        System.out.printf("Error! Wrong length of the %s! Try again: %n", ship);
                     }
                 } catch (NumberFormatException | ArrayIndexOutOfBoundsException e) {
-                    System.err.println(e.getMessage());
-                    System.err.println("Error! ");
+                    System.out.println(e.getMessage());
+                    System.out.println("Error! ");
                 }
             }
         }
+        System.out.println("The game starts!");
     }
 }
