@@ -1,6 +1,8 @@
 package Battleship;
 
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Scanner;
 import static Battleship.FieldSymbols.*;
 
@@ -25,6 +27,14 @@ enum FieldSymbols {
 public class GameField {
 
     public final char[][] field = new char[10][10];
+
+    static ArrayList<Ship> shipsOnField = new ArrayList<Ship>(List.of(
+            new AircraftCarrier(),
+            new Battleship(),
+            new Submarine(),
+            new Cruiser(),
+            new Destroyer()
+    ));
 
     //Fill up the game field with "FOG OF WAR"
     public GameField() {
@@ -116,7 +126,8 @@ public class GameField {
         return new int[]{startingRowIndex, startingColumnIndex, endingRowIndex, endingColumnIndex};
     }
 
-    private boolean canPlaceShip(int fixedIndex, int start, int end, boolean isHorizontal) {
+    //Check if the coordinates entered by user available for ship placement, if so, than place the ship
+    private boolean canPlaceShip(int fixedIndex, int start, int end, boolean isHorizontal, Ship ship) {
 
             /*
             -- If the placement is horizontal, variable 'fixed' becomes the row index and,
@@ -158,17 +169,20 @@ public class GameField {
             int fixed = isHorizontal ? fixedIndex : i;
             int iterator = isHorizontal ? i : fixedIndex;
             field[fixed][iterator] = OCCUPIED_BY_SHIP.getSymbol();
+            Coordinates coordinates = new Coordinates(fixed, iterator); // Create a 'Coordinates' object every iteration
+            ship.shipCoordinates.add(coordinates); //Store individual ship coordinates in a 'Coordinates' type Array
         }
         return true;
     }
 
-    private boolean placedShip(int startingRowIndex, int startingColumnIndex, int endingRowIndex, int endingColumnIndex) {
+    //Check if the individual ship is placed and manage between horizontal and vertical placement
+    private boolean placedShip(int startingRowIndex, int startingColumnIndex, int endingRowIndex, int endingColumnIndex, Ship ship) {
 
         //Horizontal placement
         if (startingRowIndex == endingRowIndex &&
                 startingColumnIndex >= 0 &&
                 endingColumnIndex < field.length) {
-            return canPlaceShip(startingRowIndex, startingColumnIndex, endingColumnIndex, true);
+            return canPlaceShip(startingRowIndex, startingColumnIndex, endingColumnIndex, true, ship);
         }
 
         //Vertical placement
@@ -176,25 +190,17 @@ public class GameField {
                 startingRowIndex >= 0 &&
                 endingRowIndex < field.length
         ) {
-            return canPlaceShip(startingColumnIndex, startingRowIndex, endingRowIndex, false);
+            return canPlaceShip(startingColumnIndex, startingRowIndex, endingRowIndex, false, ship);
         } else {
             System.out.println("Error! Wrong ship location! Try again:");
             return false;
         }
     }
 
+    //Place all the ships required with the helps of helper methods to the field by iterating over them over the array
     void placeShips() {
 
-        //Create a list of different ships (from larger to smaller) to place them on the field in an order
-        Ship[] shipsToPlace = {
-                new AircraftCarrier(),
-                new Battleship(),
-                new Submarine(),
-                new Cruiser(),
-                new Destroyer()
-        };
-
-        for (Ship ship : shipsToPlace) {
+        for (Ship ship : shipsOnField) {
             boolean shipPlaced = false;
 
             System.out.printf("Enter the coordinates for your %s (%d cells): %n", ship, ship.length);
@@ -214,7 +220,7 @@ public class GameField {
                     //If not, prompt the user again
                     if ((endingColumnIndex - startingColumnIndex + 1 == ship.length) ||
                             endingRowIndex - startingRowIndex + 1 == ship.length) {
-                        if (placedShip(startingRowIndex, startingColumnIndex, endingRowIndex, endingColumnIndex)) {
+                        if (placedShip(startingRowIndex, startingColumnIndex, endingRowIndex, endingColumnIndex, ship)) {
                             shipPlaced = true;
                             System.out.printf("> %c%d %c%d %n", startingRowIndex + 'A', startingColumnIndex + 1, endingRowIndex + 'A', endingColumnIndex + 1);
                             System.out.println(this);
@@ -228,6 +234,5 @@ public class GameField {
                 }
             }
         }
-        System.out.println("The game starts!");
     }
 }

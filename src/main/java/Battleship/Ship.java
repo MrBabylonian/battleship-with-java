@@ -1,10 +1,32 @@
 package Battleship;
 
+import java.util.ArrayList;
+
+import static Battleship.GameField.shipsOnField;
+
 abstract class Ship {
     int length;
+    ArrayList<Coordinates> shipCoordinates;
+    boolean isAlive;
 
     Ship(int length) {
         this.length = length;
+        this.isAlive = true;
+        shipCoordinates = new ArrayList<Coordinates>(this.length);
+    }
+
+    //Check if a ship is sunk, if yes, delete it from the 'shipsOnfield'
+    public void checkSunk() {
+        if (this.shipCoordinates.isEmpty()) {
+            this.isAlive = false;
+            shipsOnField.remove(this);
+            shipsOnField.trimToSize();
+            if (shipsOnField.isEmpty()) {
+                System.out.println("You sank the last ship. You won. Congratulations!");
+            } else {
+                System.out.println("You sank a ship! Specify a new target: \n");
+            }
+        }
     }
 }
 
