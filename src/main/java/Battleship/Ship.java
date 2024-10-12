@@ -2,29 +2,45 @@ package Battleship;
 
 import java.util.ArrayList;
 
-import static Battleship.GameField.shipsOnField;
-
 abstract class Ship {
-    int length;
-    ArrayList<Coordinates> shipCoordinates;
-    boolean isAlive;
+    private final int length;
+    private boolean isAlive;
+    private final ArrayList<Coordinate> shipCoordinates;
 
     Ship(int length) {
         this.length = length;
         this.isAlive = true;
-        shipCoordinates = new ArrayList<Coordinates>(this.length);
+        shipCoordinates = new ArrayList<Coordinate>(this.length);
     }
 
-    //Check if a ship is sunk, if yes, delete it from the 'shipsOnfield'
-    public void checkSunk() {
+    int getLength() {
+        return length;
+    }
+
+    ArrayList<Coordinate> getShipCoordinates() {
+        return shipCoordinates;
+    }
+
+    void setShipCoordinates(Coordinate coordinate) {
+        this.shipCoordinates.add(coordinate);
+    }
+
+    boolean isAlive() {
+        return this.isAlive;
+    }
+
+    //Check if a ship is sunk, if yes, delete it from 'shipsOnfield'
+    void checkSunk(ArrayList<Ship> shipsOnField) {
         if (this.shipCoordinates.isEmpty()) {
             this.isAlive = false;
             shipsOnField.remove(this);
             shipsOnField.trimToSize();
             if (shipsOnField.isEmpty()) {
-                System.out.println("You sank the last ship. You won. Congratulations!");
+                //Print the following message when one of the players loses all theirs ships and game finishes
+                System.out.printf("%s, you sank the last ship of %s. You won. Congratulations!", Game.getCurrentPlayer().getName(), Game.getOpponentPlayer().getName());
             } else {
-                System.out.println("You sank a ship! Specify a new target: \n");
+                //Print the following message when a ships gets sank
+                System.out.printf("Nice Shot! You sank the %s of %s! \n", this, Game.getOpponentPlayer().getName());
             }
         }
     }
